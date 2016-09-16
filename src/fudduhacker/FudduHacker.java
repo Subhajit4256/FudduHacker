@@ -48,7 +48,7 @@ public class FudduHacker {
          }*/
 
         try {
-            String host = "151.101.129.69";
+            String host = "localhost";
             int remoteport = 80;
             int localport = 8080;
             // Print a start-up message
