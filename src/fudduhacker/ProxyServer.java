@@ -23,6 +23,7 @@ import java.net.URLEncoder;
 import java.util.StringTokenizer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.net.ssl.HttpsURLConnection;
 
 /**
  *
@@ -39,7 +40,7 @@ public class ProxyServer {
         boolean listening = true;
 
         int port = 9999;	//default
-
+        int i=0;
         try {
             serverSocket = new ServerSocket(port);
             System.out.println("Started on: " + port);
@@ -47,9 +48,11 @@ public class ProxyServer {
             System.err.println("Could not listen on port: " + port);
             System.exit(-1);
         }
-
+        
         while (listening) {
+            System.out.println("Request no = "+i);
             new ProxyThread(serverSocket.accept()).start();
+            i++;
         }
         serverSocket.close();
     }
@@ -183,7 +186,16 @@ public class ProxyServer {
 
                     if (isPost) {
                         URL url = new URL(urlToCall);
-                        HttpURLConnection huc = (HttpURLConnection) url.openConnection();
+                        HttpURLConnection huc=null;
+                        if(urlToCall.indexOf("https")!=-1){
+                            System.err.println("Method = POST");
+                            huc=(HttpsURLConnection)url.openConnection();
+                        }
+                        else{
+                            System.err.println("Method = GET");
+                            huc  = (HttpURLConnection) url.openConnection();
+                        }
+                        
                         System.err.println("POST");
                         huc.setDoOutput(true);
                         BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(huc.getOutputStream(), "UTF8"));
@@ -240,8 +252,16 @@ public class ProxyServer {
                         }                        
                     } else {
                         URL url = new URL(urlToCall);
-                        InputStream inputstreamProxy = null;
-                        HttpURLConnection huc = (HttpURLConnection) url.openConnection();
+                        HttpURLConnection huc=null;
+                        if(urlToCall.indexOf("https")!=-1){
+                            System.err.println("Method = POST");
+                            huc=(HttpsURLConnection)url.openConnection();
+                        }
+                        else{
+                            System.err.println("Method = GET");
+                            huc  = (HttpURLConnection) url.openConnection();
+                        }
+                        InputStream inputstreamProxy = null;                        
                         try {
                             inputstreamProxy = huc.getInputStream();
                             // rd = new BufferedReader(new InputStreamReader(inputstreamProxy));
@@ -254,11 +274,11 @@ public class ProxyServer {
                         int index = inputstreamProxy.read(by, 0, BUFFER_SIZE);
                         while (index > 0) {
                             if (!socket.isClosed()) {
-                                dataoutclient.write(by, 0, index);
+                                socket.getOutputStream().write(by, 0, index);
                                 index = inputstreamProxy.read(by, 0, BUFFER_SIZE);
                             }
                         }
-                        dataoutclient.flush();
+                        socket.getOutputStream().flush();
                     }
                     //}
                     //end send request to server, get response from server
